@@ -1,4 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum DeliveryMethod {
+  PICKUP
+  DELIVERY
+}
+
+enum PaymentMethod {
+  ONLINE
+  CASH_ON_DELIVERY
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+
+  orders        Order[]
+  reservations  Reservation[]
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  description   String?
+  price         Decimal  @db.Decimal(10, 2)
+  stockQuantity Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  images     ProductImage[]
+  orderItems OrderItem[]
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  url       String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+}
+
+model Order {
+  id             String        @id @default(uuid())
+  userId         String?
+  status         OrderStatus   @default(PENDING)
+  paymentMethod  PaymentMethod
+  deliveryMethod DeliveryMethod @default(PICKUP)
+
+  subtotal    Decimal @db.Decimal(10, 2)
+  deliveryFee Decimal @db.Decimal(10, 2)
+  totalAmount Decimal @db.Decimal(10, 2)
+
+  distanceKm Float?
+
+  customerName  String
+  customerEmail String
+  customerPhone String
+
+  deliveryStreet   String?
+  deliveryCity     String?
+  deliveryPostcode String?
+  deliveryCountry  String?
+
+  createdAt DateTime @default(now())
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  orderItems OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Reservation {
+  id        String   @id @default(uuid())
+  userId    String?
+  date      DateTime
+  partySize Int
+  status    ReservationStatus @default(PENDING)
+
+  customerName  String
+  customerEmail String
+  customerPhone String
+  notes         String?
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
