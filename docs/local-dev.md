@@ -96,5 +96,15 @@ An example configuration will be provided in `.env.example`.
 
 ------------------------------------------------------------------------
 
+## 8. Database Migration (Prisma)
+
+This project uses **Prisma ORM (v6)** for database management.
+
+After starting the Docker database, run:
+
+```bash
+npx prisma migrate dev
+
+
 More setup instructions (Prisma, migrations, seeding) will be added as
 development progresses.
