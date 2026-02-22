@@ -1,81 +1,152 @@
 # Local Development Setup
 
-This document describes how to set up the local development environment
-for the Table Tickers Order & Reservation System.
+This document describes how to set up the local development environment for the **Table Tickers Order & Reservation System**.
 
-------------------------------------------------------------------------
+Repository:
+https://github.com/Capstone-table-tickers/capstone-order-reservation
+
+---
 
 ## 1. Prerequisites
 
-Ensure the following are installed:
+Ensure the following tools are installed:
 
--   Node.js (v20 LTS recommended)
--   npm (comes with Node.js)
--   Docker Desktop (running)
+- Node.js (v20 LTS recommended)
+- npm (comes with Node.js)
+- Git
+- Docker Desktop (must be running)
 
 Verify installation:
 
-``` bash
+```bash
 node -v
 npm -v
+git --version
 docker --version
 ```
 
-------------------------------------------------------------------------
+---
 
-## 2. Install Project Dependencies
+## 2. Clone the Repository
 
-After cloning the repository, install dependencies:
+```bash
+git clone https://github.com/Capstone-table-tickers/capstone-order-reservation.git
+cd capstone-order-reservation
+```
 
-``` bash
+---
+
+## 3. Install Project Dependencies
+
+```bash
 npm install
 ```
 
-------------------------------------------------------------------------
+Ensure there are no installation errors.
 
-## 3. Start PostgreSQL Database (Docker)
+---
 
-The project uses PostgreSQL running inside a Docker container.
+## 4. Configure Environment Variables
+
+This project requires environment variables for:
+
+- Database connection
+- Authentication (NextAuth)
+
+An example file is provided:
+
+.env.example
+
+Create your local environment file by copying:
+
+```bash
+cp .env.example .env
+```
+
+If you are on Windows PowerShell:
+
+```powershell
+copy .env.example .env
+```
+
+### Required Variables (example)
+
+Your `.env` file should contain:
+
+```env
+DATABASE_URL="postgresql://app:app@localhost:5432/table_tickers"
+NEXTAUTH_SECRET="dev-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+Important:
+- Never commit `.env`
+- Only commit `.env.example`
+
+---
+
+## 5. Start PostgreSQL Database (Docker)
+
+The project uses PostgreSQL (v16) running inside Docker.
 
 Start the database:
 
-``` bash
+```bash
 docker compose up -d
 ```
 
 This will:
 
--   Pull the PostgreSQL 16 image (first time only)
--   Create a container named `table_tickers_db`
--   Expose PostgreSQL on port `5432`
+- Pull the PostgreSQL 16 image (first time only)
+- Create container `table_tickers_db`
+- Expose PostgreSQL on port `5432`
+- Create a persistent volume
 
-------------------------------------------------------------------------
+Verify it is running:
 
-## 4. Stop the Database
-
-To stop the database container:
-
-``` bash
-docker compose down
+```bash
+docker ps
 ```
 
-------------------------------------------------------------------------
+---
 
-## 5. View Database Logs
+## 6. Run Database Migration (Prisma)
 
-If you need to inspect logs:
+This project uses **Prisma ORM (v6)**.
 
-``` bash
-docker logs table_tickers_db
+After starting Docker, run:
+
+```bash
+npx prisma migrate dev
 ```
 
-------------------------------------------------------------------------
+This will:
 
-## 6. Run the Application
+- Create database tables
+- Apply migrations
+- Sync schema
+
+If migration succeeds without errors, the database is correctly configured.
+
+---
+
+## 7. Seed the Database
+
+Seed demo data (including admin user):
+
+```bash
+npx prisma db seed
+```
+
+Ensure seeding completes successfully.
+
+---
+
+## 8. Run the Application
 
 Start the development server:
 
-``` bash
+```bash
 npm run dev
 ```
 
@@ -83,28 +154,67 @@ Open in browser:
 
 http://localhost:3000
 
-------------------------------------------------------------------------
+---
 
-## 7. Environment Variables
+## 9. Verify Authentication
 
-A `.env` file will be required for database connection and
-authentication configuration.
+Visit:
 
-This file is not committed to the repository.
+http://localhost:3000/api/auth/signin
 
-An example configuration will be provided in `.env.example`.
+Confirm the login page loads.
 
-------------------------------------------------------------------------
+---
 
-## 8. Database Migration (Prisma)
+## 10. Verify Admin Route Protection
 
-This project uses **Prisma ORM (v6)** for database management.
+Visit:
 
-After starting the Docker database, run:
+http://localhost:3000/admin
+
+If not authenticated, you should be redirected to the sign-in page.
+
+This confirms middleware protection is working.
+
+---
+
+## 11. Stop the Database
+
+To stop the PostgreSQL container:
 
 ```bash
-npx prisma migrate dev
+docker compose down
+```
 
+---
 
-More setup instructions (Prisma, migrations, seeding) will be added as
-development progresses.
+## 12. View Database Logs (Optional)
+
+If troubleshooting is needed:
+
+```bash
+docker logs table_tickers_db
+```
+
+---
+
+## Expected Outcome
+
+Local setup is successful when:
+
+- Dependencies install without errors
+- Docker container runs correctly
+- Prisma migration succeeds
+- Seed script executes
+- Application loads
+- Authentication route works
+- Admin route is protected
+
+---
+
+## Notes
+
+- Always pull the latest `dev` branch before starting new work.
+- Never commit `.env`.
+- Always create feature branches from `dev`.
+- All changes must go through Pull Requests.
