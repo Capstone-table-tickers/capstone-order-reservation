@@ -16,9 +16,10 @@ type ButtonAsButton = CommonProps &
     href?: never;
   };
 
-type ButtonAsLink = CommonProps & {
-  href: string;
-} & React.AnchorHTMLAttributes<HTMLAnchorElement>;
+type ButtonAsLink = CommonProps &
+  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
+    href: string;
+  };
 
 type ButtonProps = ButtonAsButton | ButtonAsLink;
 
@@ -51,8 +52,8 @@ export function Button({
     className
   );
 
-  if ("href" in props && props.href) {
-    const { href, ...linkProps } = props;
+  if ("href" in props) {
+    const { href, ...linkProps } = props as ButtonAsLink;
     return (
       <Link href={href} className={classes} {...linkProps}>
         {children}
