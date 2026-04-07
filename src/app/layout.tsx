@@ -18,11 +18,11 @@ children,
 }: { 
 children: React.ReactNode; 
 }) { 
-return ( 
-<html lang="en" className={poppins.variable}> 
-<body className="min-h-screen bg-white text-gray-900 antialiased"> 
-<AuthProvider>{children}</AuthProvider> 
-</body> 
-</html> 
+return (
+<html lang="en" className={poppins.variable}>
+<body className="min-h-screen bg-white text-gray-900 antialiased" suppressHydrationWarning>
+<AuthProvider>{children}</AuthProvider>
+</body>
+</html>
 ); 
 } 
