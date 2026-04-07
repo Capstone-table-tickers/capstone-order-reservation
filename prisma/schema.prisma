@@ -28,9 +28,15 @@ enum PaymentMethod {
   CASH_ON_DELIVERY
 }
 
+enum ReservationType {
+  PICKUP
+  DELIVERY
+}
+
 enum ReservationStatus {
   PENDING
   CONFIRMED
+  COMPLETED
   CANCELLED
 }
 
@@ -105,18 +111,24 @@ model OrderItem {
 }
 
 model Reservation {
-  id        String   @id @default(uuid())
-  userId    String?
-  date      DateTime
-  partySize Int
-  status    ReservationStatus @default(PENDING)
-
-  customerName  String
-  customerEmail String
-  customerPhone String
-  notes         String?
-
-  createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id                String            @id @default(uuid())
+  userId            String?
+  
+  customerName      String
+  customerEmail     String
+  customerPhone     String
+  
+  reservationType   ReservationType   @default(PICKUP)
+  reservationDate   DateTime          @db.Date
+  reservationTime   String
+  
+  deliveryAddress   String?
+  notes             String?
+  
+  status            ReservationStatus @default(PENDING)
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
