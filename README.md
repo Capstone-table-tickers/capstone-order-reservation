@@ -1,37 +1,179 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Table Tickers – Order & Reservation System
 
-## Getting Started
+## Project Overview
 
-First, run the development server:
+Table Tickers is a full-stack web application designed to support farm-based product browsing and reservation management. The platform allows customers to explore available farm products and submit reservation requests for pickup or delivery.
 
-```bash
+The system is built with a modern web stack and follows a structured, milestone-driven development approach.
+
+Current implementation focuses on Milestone 2 (Public UI + Core Structure).
+
+---
+
+## Tech Stack
+
+- Next.js (App Router)
+- TypeScript
+- Tailwind CSS
+- PostgreSQL (Docker)
+- Prisma ORM
+- NextAuth (credentials-based authentication)
+
+---
+
+## Features (Milestone 2)
+
+### Public Pages
+- Home page with structured sections
+- About page
+- Contact page
+- Policy pages:
+  - Privacy Policy
+  - Booking / Terms
+  - Delivery / Pickup Policy
+
+### Products
+- Public product listing page
+- Server-side data fetching using Prisma
+- Responsive product grid
+- Loading state
+- Empty state handling
+
+### Reservation
+- Reservation form UI (frontend only)
+- Fields:
+  - name, phone, email
+  - reservation date and time
+  - pickup or delivery selection
+  - conditional address field
+  - notes
+- Inline validation (client-side only)
+- Kokkola-based context and messaging
+
+### Admin (Placeholder)
+- Admin dashboard page
+- Metric cards (placeholder data)
+- Responsive dashboard layout
+- Reusable MetricCard component
+
+---
+
+## Architecture Overview
+
+The project follows a clean separation of concerns:
+
+- UI Layer
+  - Pages under src/app/(public)/
+  - Reusable components under src/components/ui/
+
+- Feature Modules
+  - Feature-based structure under src/features/
+  - Example:
+    - products/queries/
+    - admin/components/
+
+- Data Layer
+  - Prisma ORM
+  - Centralized query helpers (no direct DB calls in UI)
+
+---
+
+## Route Structure
+
+### Public Routes
+
+- / – Home
+- /about – About page
+- /products – Product listing
+- /reservation – Reservation form
+- /contact – Contact page
+- /policies/privacy
+- /policies/booking
+- /policies/delivery-pickup
+
+### Admin Routes
+
+- /admin/dashboard – Admin dashboard (protected)
+
+---
+
+## Development Workflow
+
+- Branching strategy:
+  - main → stable
+  - dev → integration
+  - feature/* → feature development
+
+- All changes go through:
+  - Pull Request
+  - CI checks (lint, typecheck, build)
+
+---
+
+## Local Development
+
+### 1. Install dependencies
+npm install
+
+### 2. Start database (Docker)
+docker compose up -d
+
+### 3. Run migrations
+npx prisma migrate dev
+
+### 4. Seed database
+npx prisma db seed
+
+### 5. Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Admin Access
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Use seeded credentials:
 
-## Learn More
+Email: admin@tabletickers.com  
+Password: admin123
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Current Limitations
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- No reservation persistence yet
+- No backend API for reservation submission
+- No product selection within reservation flow
+- No admin CRUD functionality yet
+- Dashboard uses placeholder data only
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Next Steps (Upcoming Milestones)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Reservation backend integration
+- Product management (admin CRUD)
+- Reservation management system
+- Admin layout and navigation
+- Delivery logic (distance-based pricing)
+- Payment integration
 
+---
+
+## Team Members
+
+- **Chinche Afungchwi** – Lead Developer (Backend, Architecture, Integration)
+- **Onyeisi** – Frontend Developer
+- **Chinemerem** – Documentation & UI Components
+- **Chikadibia** – Testing, QA & Dashboard Components
+---
+
+## Notes
+
+- The application is currently scoped to Kokkola, Finland
+- Design emphasizes simplicity, clarity, and reservation-first workflow
+
+---
+
+## License
+
+This project is developed as part of an academic capstone and is intended for educational use.
