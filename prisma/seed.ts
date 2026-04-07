@@ -34,20 +34,20 @@ async function main() {
     await prisma.product.createMany({
       data: [
         {
-          name: "Strawberry Cake",
-          description: "Fresh strawberry cream cake",
-          price: 25.5,
-          stockQuantity: 20,
-        },
-        {
-          name: "Chocolate Cupcake",
-          description: "Rich chocolate cupcake",
-          price: 4.99,
+          name: "Honeoye Strawberries",
+          description: "Sweet and juicy early-season strawberries, perfect for fresh eating and desserts. Grown in Kokkola's fertile soil.",
+          price: 4.50,
           stockQuantity: 50,
         },
         {
-          name: "Blueberry Smoothie",
-          description: "Healthy blueberry smoothie",
+          name: "Polka Strawberries",
+          description: "Large, firm berries with excellent flavor. Great for preserves and fresh consumption. A local favorite in Finland.",
+          price: 5.25,
+          stockQuantity: 40,
+        },
+        {
+          name: "Jonsok Strawberries",
+          description: "Premium late-season strawberries with intense sweetness and aroma. Perfect for special occasions and fresh eating.",
           price: 6.75,
           stockQuantity: 30,
         },
