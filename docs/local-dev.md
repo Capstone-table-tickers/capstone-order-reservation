@@ -178,16 +178,6 @@ This confirms middleware protection is working.
 
 ---
 
-## 11. Stop the Database
-
-To stop the PostgreSQL container:
-
-```bash
-docker compose down
-```
-
----
-
 ## 12. View Database Logs (Optional)
 
 If troubleshooting is needed:
@@ -195,6 +185,118 @@ If troubleshooting is needed:
 ```bash
 docker logs table_tickers_db
 ```
+
+---
+
+## 13. Access Prisma Studio (Optional)
+
+To view and manage database records with a GUI:
+
+```bash
+npx prisma studio
+```
+
+This opens an interactive database browser at http://localhost:5555
+
+---
+
+## 14. Test the Reservation System
+
+To verify the reservation system is working:
+
+1. Open http://localhost:3000/products
+   - Confirm products are displayed
+   - Verify product details (name, price, stock)
+
+2. Open http://localhost:3000/reservation
+   - Fill in customer information:
+     - Full name
+     - Phone
+     - Email
+   - Select a reservation date and time
+   - Select **Pickup** as fulfillment method
+     - Confirm address field is hidden
+   - Select 1-2 products with quantities
+   - Submit the form
+   - Confirm success message displays
+
+3. Test Delivery mode:
+   - Go back to reservation form
+   - Select **Delivery** as fulfillment method
+   - Confirm address field appears
+   - Try submitting without address
+     - Should show "Please enter a delivery address"
+   - Enter a delivery address
+   - Select products and submit
+   - Confirm success message displays
+
+---
+
+## 15. Access Admin Panel
+
+To access the admin panel:
+
+1. Open http://localhost:3000/api/auth/signin
+2. Login with seeded credentials:
+   - **Email**: admin@tabletickers.com
+   - **Password**: admin123
+   - Click Sign In
+
+3. Once logged in, access admin pages:
+   - **Dashboard**: http://localhost:3000/admin/dashboard
+     - View all reservations
+     - See reserved products per reservation
+     - See calculated total price
+     - Update reservation status (Pending, Confirmed, Completed, Cancelled)
+   - **Products**: http://localhost:3000/admin/products
+     - View all products
+     - Click Create Product to add new product
+     - Click Edit on any product to modify it
+     - Toggle product active status
+
+---
+
+## 16. Test Reservation Viewing in Admin
+
+After creating test reservations:
+
+1. Open http://localhost:3000/admin/dashboard
+2. Find your test reservations in the list
+3. Each reservation card shows:
+   - Customer name and contact info
+   - Reservation type (Pickup/Delivery)
+   - Delivery address (if applicable)
+   - Reserved products with quantities:
+     - Product names (clickable links to product pages - future feature)
+     - Quantities (e.g., "Fresh Strawberry × 2")
+   - Total price (calculated from product prices × quantities)
+   - Status control to update reservation status
+   - Notes (if any)
+
+---
+
+## 17. Test Product Management
+
+To verify product management:
+
+1. Open http://localhost:3000/admin/products
+2. Click "Create Product"
+   - Fill in product details:
+     - Name (must be unique)
+     - Description
+     - Price
+     - Stock Quantity
+   - Click Submit
+   - Confirm product appears in list
+
+3. Click Edit on a product
+   - Modify details
+   - Click Save
+   - Confirm changes are reflected in list
+
+4. Return to /products
+   - Confirm new product appears in public listing
+   - Verify product details match admin input
 
 ---
 
