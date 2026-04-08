@@ -1,0 +1,571 @@
+"use client";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { SectionTitle } from "@/components/ui/SectionTitle";
+import type { PublicProduct } from "@/features/products/types";
+
+type FulfillmentMethod = "PICKUP" | "DELIVERY";
+
+type ReservationForm = {
+  fullName: string;
+  phone: string;
+  email: string;
+  reservationDate: string;
+  reservationTime: string;
+  fulfillmentMethod: FulfillmentMethod;
+  address: string;
+  notes: string;
+};
+
+type SelectedProduct = {
+  productId: string;
+  quantity: number;
+};
+
+type ReservationErrors = Partial<Record<keyof ReservationForm, string>>;
+
+const initialForm: ReservationForm = {
+  fullName: "",
+  phone: "",
+  email: "",
+  reservationDate: "",
+  reservationTime: "",
+  fulfillmentMethod: "PICKUP",
+  address: "",
+  notes: "",
+};
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validateForm(values: ReservationForm): ReservationErrors {
+  const errors: ReservationErrors = {};
+
+  if (!values.fullName.trim()) {
+    errors.fullName = "Please enter your full name.";
+  }
+
+  if (!values.phone.trim()) {
+    errors.phone = "Please provide a phone number.";
+  }
+
+  if (!values.email.trim()) {
+    errors.email = "Please enter your email address.";
+  } else if (!isValidEmail(values.email)) {
+    errors.email = "Enter a valid email address.";
+  }
+
+  if (!values.reservationDate) {
+    errors.reservationDate = "Choose a reservation date.";
+  }
+
+  if (!values.reservationTime) {
+    errors.reservationTime = "Choose a reservation time.";
+  }
+
+  if (values.fulfillmentMethod === "DELIVERY" && !values.address.trim()) {
+    errors.address = "Delivery address is required.";
+  }
+
+  return errors;
+}
+
+type ReservationFormProps = {
+  products: PublicProduct[];
+};
+
+export default function ReservationFormWithProducts({ products }: ReservationFormProps) {
+  const [form, setForm] = useState<ReservationForm>(initialForm);
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const errors = useMemo(() => validateForm(form), [form]);
+  const hasErrors = Object.keys(errors).length > 0;
+
+  function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleFulfillmentChange(value: FulfillmentMethod) {
+    setForm((current) => ({
+      ...current,
+      fulfillmentMethod: value,
+      address: value === "PICKUP" ? "" : current.address,
+    }));
+  }
+
+  function handleBlur(event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    setTouched((current) => ({ ...current, [event.target.name]: true }));
+  }
+
+  function handleProductCheckChange(productId: string) {
+    setSelectedProducts((current) => {
+      const exists = current.find((p) => p.productId === productId);
+      if (exists) {
+        return current.filter((p) => p.productId !== productId);
+      } else {
+        return [...current, { productId, quantity: 1 }];
+      }
+    });
+  }
+
+  function handleProductQuantityChange(productId: string, quantity: number) {
+    setSelectedProducts((current) =>
+      current.map((p) => (p.productId === productId ? { ...p, quantity } : p))
+    );
+  }
+
+  function isProductSelected(productId: string): boolean {
+    return selectedProducts.some((p) => p.productId === productId);
+  }
+
+  function getProductQuantity(productId: string): number {
+    return selectedProducts.find((p) => p.productId === productId)?.quantity || 1;
+  }
+
+  function resetForm() {
+    setForm(initialForm);
+    setSelectedProducts([]);
+    setTouched({});
+    setSubmitted(false);
+    setSuccess(false);
+    setSubmitError(null);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
+
+    setSubmitted(true);
+    setTouched({
+      fullName: true,
+      phone: true,
+      email: true,
+      reservationDate: true,
+      reservationTime: true,
+      address: true,
+    });
+
+    if (hasErrors) {
+      setSuccess(false);
+      return;
+    }
+
+    // Start submission
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const payload = {
+        ...form,
+        selectedProducts,
+      };
+
+      const response = await fetch("/api/reservations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setSuccess(true);
+      } else {
+        setSuccess(false);
+        if (result.error?.type === "VALIDATION_ERROR") {
+          console.log("Validation errors:", result.error.issues);
+          setSubmitError("Please check the form for errors and try again.");
+        } else {
+          setSubmitError(result.error?.message || "Something went wrong. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      setSuccess(false);
+      setSubmitError("Network error. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function showError(field: keyof ReservationForm) {
+    return Boolean((submitted || touched[field]) && errors[field]);
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <section className="mb-10">
+        <SectionTitle
+          eyebrow="Reservation"
+          title="Reserve fresh farm produce for pickup or delivery in Kokkola"
+          description="Submit your reservation request for local farm products. We will review your request and contact you with pickup timing or delivery options across Kokkola."
+        />
+      </section>
+
+      <div className="grid gap-8 lg:grid-cols-[1.4fr_0.9fr]">
+        <Card className="p-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-3">
+              <Badge className="bg-green-100 text-green-800">Request a reservation</Badge>
+              <p className="text-sm text-gray-500">No payment required yet</p>
+            </div>
+            <p className="mt-4 text-base leading-7 text-gray-600">
+              Thank you for your reservation request. We're processing it now and will be in touch with the next steps.
+            </p>
+          </div>
+
+          {success ? (
+            <div className="space-y-6">
+              <div className="rounded-3xl border border-green-200 bg-green-50 p-6">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-green-700">
+                  Reservation confirmed
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold text-gray-900">
+                  Reservation request submitted successfully
+                </h3>
+                <p className="mt-4 text-sm leading-6 text-gray-600">
+                  We will review your request and contact you with next steps or confirmation.
+                </p>
+              </div>
+
+              <Card className="rounded-3xl border border-gray-200 bg-white p-6">
+                <dl className="space-y-4 text-sm text-gray-700">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                    <dt className="font-medium text-gray-900">Full name</dt>
+                    <dd>{form.fullName}</dd>
+                  </div>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                    <dt className="font-medium text-gray-900">Reservation date</dt>
+                    <dd>{form.reservationDate}</dd>
+                  </div>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                    <dt className="font-medium text-gray-900">Reservation time</dt>
+                    <dd>{form.reservationTime}</dd>
+                  </div>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                    <dt className="font-medium text-gray-900">Fulfillment method</dt>
+                    <dd>{form.fulfillmentMethod === "PICKUP" ? "Pickup" : "Delivery"}</dd>
+                  </div>
+                  {form.fulfillmentMethod === "DELIVERY" && (
+                    <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                      <dt className="font-medium text-gray-900">Delivery address</dt>
+                      <dd>{form.address}</dd>
+                    </div>
+                  )}
+                  {selectedProducts.length > 0 && (
+                    <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                      <dt className="font-medium text-gray-900">Selected products</dt>
+                      <dd>
+                        {selectedProducts.length} product{selectedProducts.length !== 1 ? "s" : ""} selected
+                      </dd>
+                    </div>
+                  )}
+                  {form.notes && (
+                    <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                      <dt className="font-medium text-gray-900">Notes</dt>
+                      <dd>{form.notes}</dd>
+                    </div>
+                  )}
+                </dl>
+              </Card>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  onClick={resetForm}
+                  className="w-full sm:w-auto"
+                >
+                  Make another reservation
+                </Button>
+                <Button href="/products" size="lg" className="w-full sm:w-auto">
+                  Back to products
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <form noValidate onSubmit={handleSubmit}>
+              <div className="grid gap-6">
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                    Full name
+                  </label>
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    value={form.fullName}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                    placeholder="Anna Koskinen"
+                    aria-invalid={showError("fullName")}
+                  />
+                  {showError("fullName") && (
+                    <p className="mt-2 text-sm text-red-600">{errors.fullName}</p>
+                  )}
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                      Phone number
+                    </label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={form.phone}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      placeholder="040 123 4567"
+                      aria-invalid={showError("phone")}
+                    />
+                    {showError("phone") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.phone}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      Email address
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      placeholder="anna@example.com"
+                      aria-invalid={showError("email")}
+                    />
+                    {showError("email") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.email}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="reservationDate" className="block text-sm font-medium text-gray-700">
+                      Reservation date
+                    </label>
+                    <input
+                      id="reservationDate"
+                      name="reservationDate"
+                      type="date"
+                      value={form.reservationDate}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      aria-invalid={showError("reservationDate")}
+                    />
+                    {showError("reservationDate") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.reservationDate}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="reservationTime" className="block text-sm font-medium text-gray-700">
+                      Reservation time
+                    </label>
+                    <input
+                      id="reservationTime"
+                      name="reservationTime"
+                      type="time"
+                      value={form.reservationTime}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      aria-invalid={showError("reservationTime")}
+                    />
+                    {showError("reservationTime") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.reservationTime}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Fulfillment method</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {(["PICKUP", "DELIVERY"] as FulfillmentMethod[]).map((option) => (
+                      <label
+                        key={option}
+                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+                          form.fulfillmentMethod === option
+                            ? "border-green-700 bg-green-50 text-gray-900"
+                            : "border-gray-300 bg-white text-gray-700 hover:border-green-500"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="fulfillmentMethod"
+                          value={option}
+                          checked={form.fulfillmentMethod === option}
+                          onChange={() => handleFulfillmentChange(option)}
+                          className="h-4 w-4 accent-green-600"
+                        />
+                        <span>{option === "PICKUP" ? "Pickup" : "Delivery"}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {form.fulfillmentMethod === "DELIVERY" && (
+                  <div>
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                      Delivery address
+                    </label>
+                    <input
+                      id="address"
+                      name="address"
+                      type="text"
+                      value={form.address}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      placeholder="Example: Keskuskatu 12, Kokkola"
+                      aria-invalid={showError("address")}
+                    />
+                    {showError("address") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.address}</p>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Product selection</label>
+                  <p className="mt-2 text-sm text-gray-600 mb-4">
+                    Select the products you'd like to reserve
+                  </p>
+                  <div className="space-y-4">
+                    {products.length > 0 ? (
+                      products.map((product) => (
+                        <div key={product.id} className="flex items-start gap-4 rounded-lg border border-gray-300 p-4">
+                          <div className="flex items-start gap-3 flex-1">
+                            <input
+                              type="checkbox"
+                              id={`product-${product.id}`}
+                              checked={isProductSelected(product.id)}
+                              onChange={() => handleProductCheckChange(product.id)}
+                              className="mt-1 h-4 w-4 rounded border-gray-300 accent-green-600"
+                            />
+                            <div className="flex-1">
+                              <label htmlFor={`product-${product.id}`} className="block font-medium text-gray-900">
+                                {product.name}
+                              </label>
+                              <p className="text-sm text-gray-600">€{parseFloat(product.price).toFixed(2)}</p>
+                            </div>
+                          </div>
+                          {isProductSelected(product.id) && (
+                            <div className="flex items-center gap-2">
+                              <label htmlFor={`qty-${product.id}`} className="text-sm text-gray-700">
+                                Qty:
+                              </label>
+                              <input
+                                id={`qty-${product.id}`}
+                                type="number"
+                                min="1"
+                                max={product.stockQuantity}
+                                value={getProductQuantity(product.id)}
+                                onChange={(e) =>
+                                  handleProductQuantityChange(product.id, parseInt(e.target.value) || 1)
+                                }
+                                className="w-16 rounded border border-gray-300 px-2 py-1 text-sm"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-600">No products available</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                    Additional notes
+                  </label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    rows={4}
+                    value={form.notes}
+                    onChange={handleChange}
+                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                    placeholder="Tell us if you need a specific pickup window or special farm products."
+                  />
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                {submitError && (
+                  <div className="rounded-lg bg-red-50 p-4">
+                    <p className="text-sm text-red-700">{submitError}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-gray-600">
+                    We will review your reservation request and contact you with the next steps.
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit reservation request"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="space-y-6">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-green-700">Reservation guide</p>
+              <h3 className="mt-3 text-xl font-semibold text-gray-900">How it works in Kokkola</h3>
+              <p className="mt-3 text-sm leading-6 text-gray-600">
+                Choose pickup from our local farm in Kokkola or request delivery to your home. Delivery availability depends on area and schedule.
+              </p>
+            </div>
+            <ul className="space-y-4 text-sm text-gray-600">
+              <li>• Pickup available from the farm store or local collection points.</li>
+              <li>• Delivery is reviewed case-by-case for Kokkola and nearby villages.</li>
+              <li>• We confirm your reservation by phone or email within one business day.</li>
+            </ul>
+          </Card>
+
+          <Card className="space-y-4">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-green-700">Need help?</p>
+            <div className="text-sm leading-6 text-gray-600">
+              <p>Contact our farm support team if you have questions about product availability, delivery, or pickup times.</p>
+              <p className="mt-3 font-medium text-gray-900">Phone: 040 123 4567</p>
+              <p className="text-gray-600">Email: info@tabletickers.fi</p>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </main>
+  );
+}

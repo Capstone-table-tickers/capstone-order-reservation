@@ -9,6 +9,10 @@ export const reservationFormSchema = z.object({
   fulfillmentMethod: z.enum(["PICKUP", "DELIVERY"]),
   address: z.string().trim().optional(),
   notes: z.string().trim().optional(),
+  products: z.array(z.object({
+    productId: z.string().trim().min(1),
+    quantity: z.number().int().min(1),
+  })).optional(),
 }).superRefine((data, ctx) => {
   if (data.fulfillmentMethod === "DELIVERY" && !data.address) {
     ctx.addIssue({
@@ -30,11 +34,16 @@ export type ReservationBackendInput = {
   reservationTime: string;
   deliveryAddress?: string;
   notes?: string;
+  products?: Array<{
+    productId: string;
+    quantity: number;
+  }>;
 };
 
 export function mapFormToReservation(input: ReservationFormInput): ReservationBackendInput {
   const deliveryAddress = input.address?.trim() || undefined;
   const notes = input.notes?.trim() || undefined;
+  const products = input.products && input.products.length > 0 ? input.products : undefined;
 
   return {
     customerName: input.fullName.trim(),
@@ -45,5 +54,6 @@ export function mapFormToReservation(input: ReservationFormInput): ReservationBa
     reservationTime: input.reservationTime,
     deliveryAddress,
     notes,
+    products,
   };
 }
