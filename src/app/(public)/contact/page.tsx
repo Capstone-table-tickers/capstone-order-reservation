@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+
+export const metadata: Metadata = {
+  title: "Contact | Table Tickers",
+  description:
+    "Get in touch with Table Tickers for product questions, reservation help, or delivery inquiries in Kokkola.",
+};
 
 const contactItems = [
   {

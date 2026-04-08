@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -23,36 +23,22 @@ function formatDate(date: Date) {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("fi-FI", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
+  return new Intl.NumberFormat("fi-FI", { style: "currency", currency: "EUR" }).format(amount);
 }
 
-function calculateReservationTotal(reservation: AdminReservation): number {
-  if (!reservation.reservationItems || reservation.reservationItems.length === 0) {
-    return 0;
-  }
-
-  return reservation.reservationItems.reduce((sum, item) => {
-    return sum + item.product.price * item.quantity;
-  }, 0);
+function calculateTotal(reservation: AdminReservation): number {
+  return (reservation.reservationItems ?? []).reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
 }
 
-function getStatusLabel(status: AdminReservation["status"]) {
-  return status.charAt(0) + status.slice(1).toLowerCase();
-}
-
-function getTypeLabel(type: AdminReservation["reservationType"]) {
-  return type === "PICKUP" ? "Pickup" : "Delivery";
-}
-
-function getStatusClasses(status: AdminReservation["status"]) {
+function getStatusStyle(status: AdminReservation["status"]) {
   switch (status) {
     case "CONFIRMED":
       return "bg-green-100 text-green-800";
     case "COMPLETED":
-      return "bg-slate-100 text-slate-900";
+      return "bg-blue-100 text-blue-800";
     case "CANCELLED":
       return "bg-red-100 text-red-800";
     default:
@@ -60,80 +46,173 @@ function getStatusClasses(status: AdminReservation["status"]) {
   }
 }
 
+const STATUS_OPTIONS = [
+  { value: "ALL", label: "All statuses" },
+  { value: "PENDING", label: "Pending" },
+  { value: "CONFIRMED", label: "Confirmed" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
+const TYPE_OPTIONS = [
+  { value: "ALL", label: "All methods" },
+  { value: "PICKUP", label: "Pickup" },
+  { value: "DELIVERY", label: "Delivery" },
+];
+
 export function AdminReservationsList({ initialReservations }: AdminReservationsListProps) {
   const [reservations, setReservations] = useState(initialReservations);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [typeFilter, setTypeFilter] = useState("ALL");
 
-  const updateReservationStatus = (id: string, newStatus: AdminReservation["status"]) => {
+  const updateStatus = (id: string, newStatus: AdminReservation["status"]) => {
     setReservations((prev) =>
       prev.map((res) => (res.id === id ? { ...res, status: newStatus } : res))
     );
   };
 
+  const filtered = useMemo(() => {
+    return reservations.filter((r) => {
+      if (statusFilter !== "ALL" && r.status !== statusFilter) return false;
+      if (typeFilter !== "ALL" && r.reservationType !== typeFilter) return false;
+      return true;
+    });
+  }, [reservations, statusFilter, typeFilter]);
+
+  const selectClass =
+    "rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100";
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <SectionTitle
           eyebrow="Reservations"
           title="Reservation list"
-          description="Browse customer reservations and key details for upcoming pickups and deliveries."
+          description="Browse customer reservations and manage upcoming pickups and deliveries."
         />
       </div>
 
-      {reservations.length === 0 ? (
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4">
+        <span className="text-sm font-medium text-gray-700">Filter by:</span>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className={selectClass}
+          aria-label="Filter by status"
+        >
+          {STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className={selectClass}
+          aria-label="Filter by fulfillment method"
+        >
+          {TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        {(statusFilter !== "ALL" || typeFilter !== "ALL") && (
+          <button
+            onClick={() => {
+              setStatusFilter("ALL");
+              setTypeFilter("ALL");
+            }}
+            className="text-sm font-medium text-red-600 hover:text-red-700"
+          >
+            Clear filters
+          </button>
+        )}
+        <span className="ml-auto text-sm text-gray-500">
+          {filtered.length} of {reservations.length} reservation{reservations.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {filtered.length === 0 ? (
         <EmptyState
-          title="No reservations yet"
-          description="There are currently no reservations in the system. New reservations will appear here once customers place them."
+          title={reservations.length === 0 ? "No reservations yet" : "No results"}
+          description={
+            reservations.length === 0
+              ? "New reservations will appear here once customers submit them."
+              : "No reservations match the current filters. Try adjusting the filters."
+          }
         />
       ) : (
         <div className="grid gap-4">
-          {reservations.map((reservation) => {
-            const total = calculateReservationTotal(reservation);
-            const hasProducts = reservation.reservationItems && reservation.reservationItems.length > 0;
+          {filtered.map((reservation) => {
+            const total = calculateTotal(reservation);
+            const hasProducts = (reservation.reservationItems ?? []).length > 0;
 
             return (
               <Card key={reservation.id} className="rounded-3xl border border-gray-200 p-6">
                 <div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
                   <div className="space-y-4">
+                    {/* Customer + status */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                       <div>
-                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Customer</p>
-                        <p className="mt-2 text-xl font-semibold text-gray-900">{reservation.customerName}</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                          Customer
+                        </p>
+                        <p className="mt-1 text-xl font-semibold text-gray-900">
+                          {reservation.customerName}
+                        </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="rounded-full px-3 py-1 text-xs uppercase tracking-[0.2em]">
-                          {getTypeLabel(reservation.reservationType)}
+                        <Badge
+                          variant="outline"
+                          className="rounded-full px-3 py-1 text-xs uppercase tracking-[0.15em]"
+                        >
+                          {reservation.reservationType === "PICKUP" ? "Pickup" : "Delivery"}
                         </Badge>
                         <ReservationStatusControl
                           reservationId={reservation.id}
                           currentStatus={reservation.status}
-                          onStatusUpdate={updateReservationStatus}
+                          onStatusUpdate={updateStatus}
                         />
                       </div>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    {/* Date + time */}
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <Detail label="Date" value={formatDate(reservation.reservationDate)} />
                       <Detail label="Time" value={reservation.reservationTime} />
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    {/* Contact */}
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <Detail label="Email" value={reservation.customerEmail} />
                       <Detail label="Phone" value={reservation.customerPhone} />
                     </div>
 
+                    {/* Reserved products */}
                     {hasProducts && (
-                      <div className="rounded-3xl bg-white px-4 py-4 shadow-sm ring-1 ring-inset ring-gray-200">
-                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Reserved Products</p>
-                        <ul className="mt-2 space-y-2">
+                      <div className="rounded-2xl bg-gray-50 px-4 py-4 ring-1 ring-inset ring-gray-200">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                          Reserved products
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
                           {reservation.reservationItems.map((item) => (
-                            <li key={item.id}>
-                              <Link
-                                href={`/products/${item.product.id}`}
-                                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                              >
-                                {item.product.name}
-                              </Link>
-                              <span className="text-sm text-gray-600"> × {item.quantity}</span>
+                            <li key={item.id} className="flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-2">
+                                <Link
+                                  href={`/products/${item.product.id}`}
+                                  target="_blank"
+                                  className="font-medium text-green-700 hover:underline"
+                                >
+                                  {item.product.name}
+                                </Link>
+                                <span className="text-gray-500">× {item.quantity}</span>
+                              </div>
+                              <span className="text-gray-700">
+                                {formatCurrency(item.product.price * item.quantity)}
+                              </span>
                             </li>
                           ))}
                         </ul>
@@ -141,32 +220,45 @@ export function AdminReservationsList({ initialReservations }: AdminReservations
                     )}
                   </div>
 
-                  <div className="space-y-4 rounded-3xl border border-gray-200 bg-gray-50 p-4">
+                  {/* Sidebar */}
+                  <div className="space-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
                     <div>
-                      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Delivery address</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                        {reservation.reservationType === "DELIVERY" ? "Delivery address" : "Pickup"}
+                      </p>
                       <p className="mt-2 text-sm leading-6 text-gray-700">
-                        {reservation.deliveryAddress || "Pickup location"}
+                        {reservation.deliveryAddress || "Pickup from farm"}
                       </p>
                     </div>
 
-                    {reservation.notes ? (
-                      <div>
-                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Notes</p>
-                        <p className="mt-2 text-sm leading-6 text-gray-700">{reservation.notes}</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Notes</p>
-                        <p className="mt-2 text-sm leading-6 text-gray-500">No additional notes</p>
-                      </div>
-                    )}
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Notes</p>
+                      <p className="mt-2 text-sm leading-6 text-gray-500">
+                        {reservation.notes || "No additional notes"}
+                      </p>
+                    </div>
 
                     {hasProducts && (
                       <div className="border-t border-gray-200 pt-4">
-                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Total</p>
-                        <p className="mt-2 text-lg font-semibold text-gray-900">{formatCurrency(total)}</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                          Total
+                        </p>
+                        <p className="mt-1 text-xl font-semibold text-gray-900">
+                          {formatCurrency(total)}
+                        </p>
                       </div>
                     )}
+
+                    <div className="border-t border-gray-200 pt-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                        Status
+                      </p>
+                      <span
+                        className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-medium ${getStatusStyle(reservation.status)}`}
+                      >
+                        {reservation.status.charAt(0) + reservation.status.slice(1).toLowerCase()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -178,17 +270,11 @@ export function AdminReservationsList({ initialReservations }: AdminReservations
   );
 }
 
-function Detail({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-3xl bg-white px-4 py-4 shadow-sm ring-1 ring-inset ring-gray-200">
-      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">{label}</p>
-      <p className="mt-2 text-sm leading-6 text-gray-700">{value}</p>
+    <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-inset ring-gray-200">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">{label}</p>
+      <p className="mt-1 text-sm leading-6 text-gray-800">{value}</p>
     </div>
   );
 }

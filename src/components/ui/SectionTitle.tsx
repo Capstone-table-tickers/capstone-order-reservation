@@ -18,15 +18,15 @@ export function SectionTitle({
   return (
     <div className={cn(align === "center" ? "text-center" : "text-left", className)}>
       {eyebrow && (
-        <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-green-700">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-brand-600)]">
           {eyebrow}
         </p>
       )}
-      <h2 className="text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
+      <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
         {title}
       </h2>
       {description && (
-        <p className="mt-6 max-w-2xl text-base leading-7 text-gray-600 sm:text-lg">
+        <p className="mt-4 max-w-2xl text-base leading-7 text-gray-500">
           {description}
         </p>
       )}

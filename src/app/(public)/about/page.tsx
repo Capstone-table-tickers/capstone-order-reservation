@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+
+export const metadata: Metadata = {
+  title: "About Us | Table Tickers",
+  description:
+    "Table Tickers connects Kokkola residents with fresh local farm produce through a simple reservation-first experience.",
+};
 
 export default function AboutPage() {
   return (
