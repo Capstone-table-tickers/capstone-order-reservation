@@ -38,11 +38,18 @@ export default async function AdminProductsPage() {
 
   return (
     <div className="space-y-8">
-      <SectionTitle
-        eyebrow="Products"
-        title="Manage farm products"
-        description="View and maintain the catalog of farm products available for pickup and delivery."
-      />
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <SectionTitle
+            eyebrow="Products"
+            title="Manage farm products"
+            description="View and maintain the catalog of farm products available for pickup and delivery."
+          />
+        </div>
+        <Button href="/admin/products/new" size="sm">
+          Create Product
+        </Button>
+      </div>
 
       {products.length === 0 ? (
         <EmptyState
@@ -89,7 +96,7 @@ export default async function AdminProductsPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" size="sm" href="#">
+                    <Button variant="secondary" size="sm" href={`/admin/products/${product.id}/edit`}>
                       Edit
                     </Button>
                     <Button variant="secondary" size="sm" href="#">
