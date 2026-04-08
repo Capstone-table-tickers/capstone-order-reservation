@@ -72,6 +72,8 @@ export default function ReservationPage() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const errors = useMemo(() => validateForm(form), [form]);
   const hasErrors = Object.keys(errors).length > 0;
@@ -93,8 +95,20 @@ export default function ReservationPage() {
     setTouched((current) => ({ ...current, [event.target.name]: true }));
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function resetForm() {
+    setForm(initialForm);
+    setTouched({});
+    setSubmitted(false);
+    setSuccess(false);
+    setSubmitError(null);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
+    
     setSubmitted(true);
     setTouched({
       fullName: true,
@@ -105,10 +119,43 @@ export default function ReservationPage() {
       address: true,
     });
 
-    if (!hasErrors) {
-      setSuccess(true);
-    } else {
+    if (hasErrors) {
       setSuccess(false);
+      return;
+    }
+
+    // Start submission
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const response = await fetch("/api/reservations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setSuccess(true);
+      } else {
+        setSuccess(false);
+        if (result.error?.type === "VALIDATION_ERROR") {
+          console.log("Validation errors:", result.error.issues);
+          setSubmitError("Please check the form for errors and try again.");
+        } else {
+          setSubmitError(result.error?.message || "Something went wrong. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      setSuccess(false);
+      setSubmitError("Network error. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -134,192 +181,263 @@ export default function ReservationPage() {
               <p className="text-sm text-gray-500">No payment required yet</p>
             </div>
             <p className="mt-4 text-base leading-7 text-gray-600">
-              Complete the form below to reserve fresh strawberries, vegetables, or farm products. Pickup and delivery both available in the Kokkola area.
+              Thank you for your reservation request. We’re processing it now and will be in touch with the next steps.
             </p>
           </div>
 
-          <form noValidate onSubmit={handleSubmit}>
-            <div className="grid gap-6">
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                  Full name
-                </label>
-                <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  value={form.fullName}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
-                  placeholder="Anna Koskinen"
-                  aria-invalid={showError("fullName")}
-                />
-                {showError("fullName") && (
-                  <p className="mt-2 text-sm text-red-600">{errors.fullName}</p>
-                )}
-              </div>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone number
-                  </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={form.phone}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
-                    placeholder="040 123 4567"
-                    aria-invalid={showError("phone")}
-                  />
-                  {showError("phone") && (
-                    <p className="mt-2 text-sm text-red-600">{errors.phone}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email address
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
-                    placeholder="anna@example.com"
-                    aria-invalid={showError("email")}
-                  />
-                  {showError("email") && (
-                    <p className="mt-2 text-sm text-red-600">{errors.email}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                <div>
-                  <label htmlFor="reservationDate" className="block text-sm font-medium text-gray-700">
-                    Reservation date
-                  </label>
-                  <input
-                    id="reservationDate"
-                    name="reservationDate"
-                    type="date"
-                    value={form.reservationDate}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
-                    aria-invalid={showError("reservationDate")}
-                  />
-                  {showError("reservationDate") && (
-                    <p className="mt-2 text-sm text-red-600">{errors.reservationDate}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="reservationTime" className="block text-sm font-medium text-gray-700">
-                    Reservation time
-                  </label>
-                  <input
-                    id="reservationTime"
-                    name="reservationTime"
-                    type="time"
-                    value={form.reservationTime}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
-                    aria-invalid={showError("reservationTime")}
-                  />
-                  {showError("reservationTime") && (
-                    <p className="mt-2 text-sm text-red-600">{errors.reservationTime}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium text-gray-700">Fulfillment method</p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {(["PICKUP", "DELIVERY"] as FulfillmentMethod[]).map((option) => (
-                    <label
-                      key={option}
-                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium transition ${
-                        form.fulfillmentMethod === option
-                          ? "border-green-700 bg-green-50 text-gray-900"
-                          : "border-gray-300 bg-white text-gray-700 hover:border-green-500"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="fulfillmentMethod"
-                        value={option}
-                        checked={form.fulfillmentMethod === option}
-                        onChange={() => handleFulfillmentChange(option)}
-                        className="h-4 w-4 accent-green-600"
-                      />
-                      <span>{option === "PICKUP" ? "Pickup" : "Delivery"}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {form.fulfillmentMethod === "DELIVERY" && (
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                    Delivery address
-                  </label>
-                  <input
-                    id="address"
-                    name="address"
-                    type="text"
-                    value={form.address}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
-                    placeholder="Example: Keskuskatu 12, Kokkola"
-                    aria-invalid={showError("address")}
-                  />
-                  {showError("address") && (
-                    <p className="mt-2 text-sm text-red-600">{errors.address}</p>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                  Additional notes
-                </label>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  rows={4}
-                  value={form.notes}
-                  onChange={handleChange}
-                  className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
-                  placeholder="Tell us if you need a specific pickup window or special farm products."
-                />
-              </div>
-            </div>
-
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-600">
-                  We will review your reservation request and contact you with the next steps.
+          {success ? (
+            <div className="space-y-6">
+              <div className="rounded-3xl border border-green-200 bg-green-50 p-6">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-green-700">
+                  Reservation confirmed
                 </p>
-                {success && (
-                  <p className="mt-2 text-sm text-green-700">Your reservation request looks good.</p>
-                )}
+                <h3 className="mt-3 text-2xl font-semibold text-gray-900">
+                  Reservation request submitted successfully
+                </h3>
+                <p className="mt-4 text-sm leading-6 text-gray-600">
+                  We will review your request and contact you with next steps or confirmation.
+                </p>
               </div>
-              <Button type="submit" size="lg" className="w-full sm:w-auto">
-                Submit reservation request
-              </Button>
+
+              <Card className="rounded-3xl border border-gray-200 bg-white p-6">
+                <dl className="space-y-4 text-sm text-gray-700">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                    <dt className="font-medium text-gray-900">Full name</dt>
+                    <dd>{form.fullName}</dd>
+                  </div>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                    <dt className="font-medium text-gray-900">Reservation date</dt>
+                    <dd>{form.reservationDate}</dd>
+                  </div>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                    <dt className="font-medium text-gray-900">Reservation time</dt>
+                    <dd>{form.reservationTime}</dd>
+                  </div>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                    <dt className="font-medium text-gray-900">Fulfillment method</dt>
+                    <dd>{form.fulfillmentMethod === "PICKUP" ? "Pickup" : "Delivery"}</dd>
+                  </div>
+                  {form.fulfillmentMethod === "DELIVERY" && (
+                    <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                      <dt className="font-medium text-gray-900">Delivery address</dt>
+                      <dd>{form.address}</dd>
+                    </div>
+                  )}
+                  {form.notes && (
+                    <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                      <dt className="font-medium text-gray-900">Notes</dt>
+                      <dd>{form.notes}</dd>
+                    </div>
+                  )}
+                </dl>
+              </Card>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  onClick={resetForm}
+                  className="w-full sm:w-auto"
+                >
+                  Make another reservation
+                </Button>
+                <Button href="/products" size="lg" className="w-full sm:w-auto">
+                  Back to products
+                </Button>
+              </div>
             </div>
-          </form>
+          ) : (
+            <form noValidate onSubmit={handleSubmit}>
+              <div className="grid gap-6">
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                    Full name
+                  </label>
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    value={form.fullName}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                    placeholder="Anna Koskinen"
+                    aria-invalid={showError("fullName")}
+                  />
+                  {showError("fullName") && (
+                    <p className="mt-2 text-sm text-red-600">{errors.fullName}</p>
+                  )}
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                      Phone number
+                    </label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={form.phone}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      placeholder="040 123 4567"
+                      aria-invalid={showError("phone")}
+                    />
+                    {showError("phone") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.phone}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      Email address
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      placeholder="anna@example.com"
+                      aria-invalid={showError("email")}
+                    />
+                    {showError("email") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.email}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="reservationDate" className="block text-sm font-medium text-gray-700">
+                      Reservation date
+                    </label>
+                    <input
+                      id="reservationDate"
+                      name="reservationDate"
+                      type="date"
+                      value={form.reservationDate}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      aria-invalid={showError("reservationDate")}
+                    />
+                    {showError("reservationDate") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.reservationDate}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="reservationTime" className="block text-sm font-medium text-gray-700">
+                      Reservation time
+                    </label>
+                    <input
+                      id="reservationTime"
+                      name="reservationTime"
+                      type="time"
+                      value={form.reservationTime}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      aria-invalid={showError("reservationTime")}
+                    />
+                    {showError("reservationTime") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.reservationTime}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Fulfillment method</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {(["PICKUP", "DELIVERY"] as FulfillmentMethod[]).map((option) => (
+                      <label
+                        key={option}
+                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+                          form.fulfillmentMethod === option
+                            ? "border-green-700 bg-green-50 text-gray-900"
+                            : "border-gray-300 bg-white text-gray-700 hover:border-green-500"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="fulfillmentMethod"
+                          value={option}
+                          checked={form.fulfillmentMethod === option}
+                          onChange={() => handleFulfillmentChange(option)}
+                          className="h-4 w-4 accent-green-600"
+                        />
+                        <span>{option === "PICKUP" ? "Pickup" : "Delivery"}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {form.fulfillmentMethod === "DELIVERY" && (
+                  <div>
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                      Delivery address
+                    </label>
+                    <input
+                      id="address"
+                      name="address"
+                      type="text"
+                      value={form.address}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                      placeholder="Example: Keskuskatu 12, Kokkola"
+                      aria-invalid={showError("address")}
+                    />
+                    {showError("address") && (
+                      <p className="mt-2 text-sm text-red-600">{errors.address}</p>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                    Additional notes
+                  </label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    rows={4}
+                    value={form.notes}
+                    onChange={handleChange}
+                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100"
+                    placeholder="Tell us if you need a specific pickup window or special farm products."
+                  />
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                {submitError && (
+                  <div className="rounded-lg bg-red-50 p-4">
+                    <p className="text-sm text-red-700">{submitError}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-gray-600">
+                    We will review your reservation request and contact you with the next steps.
+                  </p>
+                </div>
+                <Button 
+                  type="submit" 
+                  size="lg" 
+                  className="w-full sm:w-auto"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit reservation request"}
+                </Button>
+              </div>
+            </form>
+          )}
         </Card>
 
         <div className="space-y-6">
