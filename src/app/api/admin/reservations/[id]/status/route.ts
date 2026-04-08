@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -21,9 +22,10 @@ const statusUpdateSchema = z.object({
 });
 
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   const session = await getServerSession(authOptions);
   if (!session) {
     return unauthorizedResponse();
@@ -33,7 +35,7 @@ export async function PATCH(
     return forbiddenResponse();
   }
 
-  const paramsResult = reservationIdParamSchema.safeParse(params);
+  const paramsResult = reservationIdParamSchema.safeParse({ id });
   if (!paramsResult.success) {
     return validationErrorResponse(paramsResult.error.issues, "Invalid reservation id");
   }
