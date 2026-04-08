@@ -72,6 +72,8 @@ export default function ReservationPage() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const errors = useMemo(() => validateForm(form), [form]);
   const hasErrors = Object.keys(errors).length > 0;
@@ -93,8 +95,12 @@ export default function ReservationPage() {
     setTouched((current) => ({ ...current, [event.target.name]: true }));
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
+    
     setSubmitted(true);
     setTouched({
       fullName: true,
@@ -105,10 +111,43 @@ export default function ReservationPage() {
       address: true,
     });
 
-    if (!hasErrors) {
-      setSuccess(true);
-    } else {
+    if (hasErrors) {
       setSuccess(false);
+      return;
+    }
+
+    // Start submission
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const response = await fetch("/api/reservations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setSuccess(true);
+      } else {
+        setSuccess(false);
+        if (result.error?.type === "VALIDATION_ERROR") {
+          console.log("Validation errors:", result.error.issues);
+          setSubmitError("Please check the form for errors and try again.");
+        } else {
+          setSubmitError(result.error?.message || "Something went wrong. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      setSuccess(false);
+      setSubmitError("Network error. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -307,16 +346,26 @@ export default function ReservationPage() {
             </div>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              {submitError && (
+                <div className="rounded-lg bg-red-50 p-4">
+                  <p className="text-sm text-red-700">{submitError}</p>
+                </div>
+              )}
               <div>
                 <p className="text-sm text-gray-600">
                   We will review your reservation request and contact you with the next steps.
                 </p>
                 {success && (
-                  <p className="mt-2 text-sm text-green-700">Your reservation request looks good.</p>
+                  <p className="mt-2 text-sm text-green-700">Your reservation request has been submitted successfully!</p>
                 )}
               </div>
-              <Button type="submit" size="lg" className="w-full sm:w-auto">
-                Submit reservation request
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="w-full sm:w-auto"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Submit reservation request"}
               </Button>
             </div>
           </form>
