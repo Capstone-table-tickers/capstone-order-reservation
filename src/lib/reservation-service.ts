@@ -20,33 +20,88 @@ function parseReservationDate(dateString: string): Date {
   return date;
 }
 
+type ReservationItemCreateManyArgs = {
+  data: Array<{
+    reservationId: string;
+    productId: string;
+    quantity: number;
+  }>;
+};
+
+type ReservationTransactionClient = {
+  reservation: typeof prisma.reservation;
+  product: typeof prisma.product;
+  reservationItem: {
+    createMany(args: ReservationItemCreateManyArgs): Promise<unknown>;
+  };
+};
+
 export async function createReservation(data: ReservationBackendInput) {
   const reservationDate = parseReservationDate(data.reservationDate);
 
-  return prisma.reservation.create({
-    data: {
-      customerName: data.customerName,
-      customerPhone: data.customerPhone,
-      customerEmail: data.customerEmail,
-      reservationType: data.reservationType,
-      reservationDate,
-      reservationTime: data.reservationTime,
-      deliveryAddress: data.deliveryAddress,
-      notes: data.notes,
-    },
-    select: {
-      id: true,
-      customerName: true,
-      customerPhone: true,
-      customerEmail: true,
-      reservationType: true,
-      reservationDate: true,
-      reservationTime: true,
-      deliveryAddress: true,
-      notes: true,
-      status: true,
-      createdAt: true,
-    },
+  return prisma.$transaction(async (tx) => {
+    const txClient = tx as unknown as ReservationTransactionClient;
+
+    if (data.products && data.products.length > 0) {
+      const productIds = data.products.map((product) => product.productId);
+      const uniqueProductIds = Array.from(new Set(productIds));
+
+      if (uniqueProductIds.length !== productIds.length) {
+        throw new Error("Duplicate product selections are not allowed");
+      }
+
+      const activeProducts = await txClient.product.findMany({
+        where: {
+          id: { in: uniqueProductIds },
+          isActive: true,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (activeProducts.length !== uniqueProductIds.length) {
+        throw new Error("One or more selected products are invalid or inactive");
+      }
+    }
+
+    const reservation = await txClient.reservation.create({
+      data: {
+        customerName: data.customerName,
+        customerPhone: data.customerPhone,
+        customerEmail: data.customerEmail,
+        reservationType: data.reservationType,
+        reservationDate,
+        reservationTime: data.reservationTime,
+        deliveryAddress: data.deliveryAddress,
+        notes: data.notes,
+      },
+      select: {
+        id: true,
+        customerName: true,
+        customerPhone: true,
+        customerEmail: true,
+        reservationType: true,
+        reservationDate: true,
+        reservationTime: true,
+        deliveryAddress: true,
+        notes: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    if (data.products && data.products.length > 0) {
+      await txClient.reservationItem.createMany({
+        data: data.products.map((product) => ({
+          reservationId: reservation.id,
+          productId: product.productId,
+          quantity: product.quantity,
+        })),
+      });
+    }
+
+    return reservation;
   });
 }
 
