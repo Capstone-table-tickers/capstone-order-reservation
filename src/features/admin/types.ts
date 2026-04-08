@@ -13,3 +13,20 @@ export type AdminReservation = {
   status: ReservationStatus;
   createdAt: Date;
 };
+
+export type AdminProductImage = {
+  id: string;
+  url: string;
+};
+
+export type AdminProduct = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string;
+  stockQuantity: number;
+  isActive: boolean;
+  createdAt: Date;
+  images: AdminProductImage[];
+};
+
