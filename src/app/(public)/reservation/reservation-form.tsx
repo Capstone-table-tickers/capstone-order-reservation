@@ -168,7 +168,7 @@ export default function ReservationFormWithProducts({ products }: ReservationFor
     try {
       const payload = {
         ...form,
-        selectedProducts,
+        products: selectedProducts,
       };
 
       const response = await fetch("/api/reservations", {

@@ -12,6 +12,15 @@ export type AdminReservation = {
   notes: string | null;
   status: ReservationStatus;
   createdAt: Date;
+  reservationItems: {
+    id: string;
+    quantity: number;
+    product: {
+      id: string;
+      name: string;
+      price: number;
+    };
+  }[];
 };
 
 export type AdminProductImage = {
