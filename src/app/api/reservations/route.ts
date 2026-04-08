@@ -1,7 +1,11 @@
-import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { createReservation } from "@/lib/reservation-service";
 import { mapFormToReservation, reservationFormSchema } from "@/lib/schemas/reservation";
+import {
+  serverErrorResponse,
+  successResponse,
+  validationErrorResponse,
+} from "@/lib/api-response";
 
 export async function POST(request: Request) {
   try {
@@ -10,37 +14,14 @@ export async function POST(request: Request) {
     const reservationData = mapFormToReservation(validated);
     const reservation = await createReservation(reservationData);
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: reservation,
-      },
-      { status: 201 }
-    );
+    return successResponse(reservation, 201);
   } catch (error) {
     if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            message: "Validation failed",
-            issues: error.issues,
-          },
-        },
-        { status: 400 }
-      );
+      return validationErrorResponse(error.issues);
     }
 
     console.error("Reservation creation failed:", error);
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          message: "Unable to create reservation",
-        },
-      },
-      { status: 500 }
-    );
+    return serverErrorResponse("Unable to create reservation");
   }
 }
