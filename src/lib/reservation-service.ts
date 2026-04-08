@@ -39,6 +39,13 @@ type ReservationTransactionClient = {
 export async function createReservation(data: ReservationBackendInput) {
   const reservationDate = parseReservationDate(data.reservationDate);
 
+  // Enforce delivery address requirement at service layer (defense-in-depth)
+  if (data.reservationType === "DELIVERY") {
+    if (!data.deliveryAddress || !data.deliveryAddress.trim()) {
+      throw new Error("Delivery address is required for delivery reservations");
+    }
+  }
+
   return prisma.$transaction(async (tx) => {
     const txClient = tx as unknown as ReservationTransactionClient;
 

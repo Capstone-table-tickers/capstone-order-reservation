@@ -66,8 +66,9 @@ function validateForm(values: ReservationForm): ReservationErrors {
     errors.reservationTime = "Choose a reservation time.";
   }
 
+  // Delivery requires address, pickup does not
   if (values.fulfillmentMethod === "DELIVERY" && !values.address.trim()) {
-    errors.address = "Delivery address is required.";
+    errors.address = "Please enter a delivery address.";
   }
 
   return errors;
@@ -186,8 +187,14 @@ export default function ReservationFormWithProducts({ products }: ReservationFor
       } else {
         setSuccess(false);
         if (result.error?.type === "VALIDATION_ERROR") {
-          console.log("Validation errors:", result.error.issues);
-          setSubmitError("Please check the form for errors and try again.");
+          // Parse backend validation errors - look for delivery address issue
+          const issues = result.error.issues || [];
+          const addressIssue = issues.find((issue: any) => issue.path?.includes("address"));
+          if (addressIssue) {
+            setSubmitError(addressIssue.message || "Please check the form for errors and try again.");
+          } else {
+            setSubmitError("Please check the form for errors and try again.");
+          }
         } else {
           setSubmitError(result.error?.message || "Something went wrong. Please try again.");
         }
@@ -428,11 +435,14 @@ export default function ReservationFormWithProducts({ products }: ReservationFor
                   </div>
                 </div>
 
-                {form.fulfillmentMethod === "DELIVERY" && (
+                {form.fulfillmentMethod === "DELIVERY" ? (
                   <div>
                     <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                      Delivery address
+                      Delivery address <span className="text-red-600">*</span>
                     </label>
+                    <p className="mt-1 text-sm text-gray-600 mb-2">
+                      We need your address to arrange delivery to your home.
+                    </p>
                     <input
                       id="address"
                       name="address"
@@ -447,6 +457,12 @@ export default function ReservationFormWithProducts({ products }: ReservationFor
                     {showError("address") && (
                       <p className="mt-2 text-sm text-red-600">{errors.address}</p>
                     )}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                    <p className="text-sm text-blue-900">
+                      <span className="font-medium">Pickup selected:</span> No address needed. We'll confirm your preferred pickup time.
+                    </p>
                   </div>
                 )}
 
