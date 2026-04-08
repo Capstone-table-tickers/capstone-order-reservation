@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { ReservationStatus } from "@prisma/client";
 import { ReservationBackendInput } from "@/lib/schemas/reservation";
 
 function parseReservationDate(dateString: string): Date {
@@ -38,6 +39,33 @@ export async function createReservation(data: ReservationBackendInput) {
       customerName: true,
       customerPhone: true,
       customerEmail: true,
+      reservationType: true,
+      reservationDate: true,
+      reservationTime: true,
+      deliveryAddress: true,
+      notes: true,
+      status: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function updateReservationStatus(
+  reservationId: string,
+  status: ReservationStatus
+) {
+  return prisma.reservation.update({
+    where: {
+      id: reservationId,
+    },
+    data: {
+      status,
+    },
+    select: {
+      id: true,
+      customerName: true,
+      customerEmail: true,
+      customerPhone: true,
       reservationType: true,
       reservationDate: true,
       reservationTime: true,
