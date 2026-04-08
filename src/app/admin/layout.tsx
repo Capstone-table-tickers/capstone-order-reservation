@@ -12,7 +12,7 @@ export default async function AdminLayout({
 
   // Unauthenticated users should be sent to sign-in
   if (!session) {
-    redirect("/api/auth/signin");
+    redirect("/login");
   }
 
   // Authenticated users without ADMIN role should be sent home
@@ -21,10 +21,10 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 sm:flex-row">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-[var(--color-surface-muted)] sm:flex-row">
       <AdminNav />
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</div>
+      <main className="min-w-0 flex-1">
+        <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</div>
       </main>
     </div>
   );

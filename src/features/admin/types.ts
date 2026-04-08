@@ -26,6 +26,7 @@ export type AdminReservation = {
 export type AdminProductImage = {
   id: string;
   url: string;
+  isPrimary: boolean;
 };
 
 export type AdminProduct = {

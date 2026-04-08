@@ -1,6 +1,7 @@
 export type PublicProductImage = {
   id: string;
   url: string;
+  isPrimary: boolean;
 };
 
 export type PublicProduct = {

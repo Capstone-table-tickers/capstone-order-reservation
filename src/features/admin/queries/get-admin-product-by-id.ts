@@ -6,17 +6,13 @@ export async function getAdminProductById(id: string): Promise<AdminProduct | nu
     where: { id },
     include: {
       images: {
-        select: {
-          id: true,
-          url: true,
-        },
+        select: { id: true, url: true, isPrimary: true },
+        orderBy: { isPrimary: "desc" },
       },
     },
   });
 
-  if (!product) {
-    return null;
-  }
+  if (!product) return null;
 
   return {
     id: product.id,
@@ -29,6 +25,7 @@ export async function getAdminProductById(id: string): Promise<AdminProduct | nu
     images: product.images.map((image) => ({
       id: image.id,
       url: image.url,
+      isPrimary: image.isPrimary,
     })),
   };
 }

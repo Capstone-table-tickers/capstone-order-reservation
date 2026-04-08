@@ -22,23 +22,22 @@ export function MetricCard({
   return (
     <Card
       className={cn(
-        "group flex h-full flex-col justify-between rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:border-green-300 hover:shadow-md",
+        "flex flex-col justify-between transition hover:border-[var(--color-brand-200)] hover:shadow-md",
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-gray-400">{label}</p>
-          <p className="mt-4 text-4xl font-semibold tracking-tight text-gray-950 sm:text-5xl">{value}</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">{label}</p>
+          <p className="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{value}</p>
         </div>
         {badgeLabel ? (
-          <Badge variant={badgeVariant} className="rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em]">
+          <Badge variant={badgeVariant} className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest">
             {badgeLabel}
           </Badge>
         ) : null}
       </div>
-
-      <p className="mt-6 text-sm leading-6 text-gray-500">{description}</p>
+      <p className="mt-4 text-sm leading-6 text-gray-500">{description}</p>
     </Card>
   );
 }

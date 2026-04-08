@@ -3,18 +3,12 @@ import type { PublicProduct } from "../types";
 
 export async function getPublicProducts(): Promise<PublicProduct[]> {
   const products = await prisma.product.findMany({
-    where: {
-      isActive: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+    where: { isActive: true },
+    orderBy: { createdAt: "desc" },
     include: {
       images: {
-        select: {
-          id: true,
-          url: true,
-        },
+        select: { id: true, url: true, isPrimary: true },
+        orderBy: { isPrimary: "desc" },
       },
     },
   });
@@ -29,6 +23,7 @@ export async function getPublicProducts(): Promise<PublicProduct[]> {
     images: product.images.map((image) => ({
       id: image.id,
       url: image.url,
+      isPrimary: image.isPrimary,
     })),
   }));
 }
