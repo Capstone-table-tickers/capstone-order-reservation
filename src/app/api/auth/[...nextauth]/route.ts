@@ -44,9 +44,11 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // If the callback URL exists and is a valid relative URL, use it
-      // Otherwise, default to /admin/dashboard for admin users
+      // NextAuth's client expects an absolute URL in the response.
       if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      if (new URL(url).origin === baseUrl) {
         return url;
       }
       return baseUrl;
