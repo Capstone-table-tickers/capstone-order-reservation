@@ -23,20 +23,24 @@ export default function LoginPageClient({ callbackUrl }: LoginPageClientProps) {
     setIsSubmitting(true);
     setError(null);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-      callbackUrl,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl,
+      });
 
-    setIsSubmitting(false);
-
-    if (result?.error) {
-      setError("Invalid email or password. Please try again.");
-    } else if (result?.ok) {
-      router.push(callbackUrl);
-      router.refresh();
+      if (result?.error) {
+        setError("Invalid email or password. Please try again.");
+      } else if (result?.ok) {
+        router.push(callbackUrl);
+        router.refresh();
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
