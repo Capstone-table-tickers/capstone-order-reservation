@@ -1,20 +1,71 @@
-@import "tailwindcss"; 
-:root { --background: #ffffff; --foreground: #111827; --font-sans: var(--font-poppins); 
-} 
-@theme inline { 
---color-background: var(--background); --color-foreground: var(--foreground); --font-sans: var(--font-poppins); 
-} 
-* { 
-box-sizing: border-box; 
-} 
-html { 
-scroll-behavior: smooth; 
-} 
-body { 
-background: var(--background); 
-color: var(--foreground); 
-font-family: var(--font-poppins), sans-serif; 
-} 
-a { 
-text-decoration: none; 
+@import "tailwindcss";
+
+:root {
+  --background: #f8f7f4;
+  --foreground: #181818;
+
+  /* Brand — deep forest green */
+  --color-brand-50:  #eef6eb;
+  --color-brand-100: #d5eacd;
+  --color-brand-200: #aad4a0;
+  --color-brand-600: #3a7731;
+  --color-brand-700: #2e5e27;
+  --color-brand-800: #234a1e;
+  --color-brand-900: #172f13;
+
+  /* Accent — warm amber */
+  --color-accent-50:  #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+
+  /* Surface */
+  --color-surface:        #ffffff;
+  --color-surface-muted:  #f4f3ef;
+  --color-border:         #e4e3de;
+  --color-border-subtle:  #eeede8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-poppins);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Focus ring using brand color */
+:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

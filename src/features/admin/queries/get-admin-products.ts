@@ -3,15 +3,11 @@ import type { AdminProduct } from "../types";
 
 export async function getAdminProducts(): Promise<AdminProduct[]> {
   const products = await prisma.product.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { createdAt: "desc" },
     include: {
       images: {
-        select: {
-          id: true,
-          url: true,
-        },
+        select: { id: true, url: true, isPrimary: true },
+        orderBy: { isPrimary: "desc" },
       },
     },
   });
@@ -27,6 +23,7 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
     images: product.images.map((image) => ({
       id: image.id,
       url: image.url,
+      isPrimary: image.isPrimary,
     })),
   }));
 }

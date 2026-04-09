@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "primary" | "secondary";
+type ButtonVariant = "primary" | "secondary" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
 
 type CommonProps = {
@@ -30,29 +30,27 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
-  const baseClasses =
-    "inline-flex items-center justify-center rounded-full font-semibold transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2";
+  const base =
+    "inline-flex items-center justify-center rounded-full font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-600)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 
-  const variantClasses = {
-    primary: "bg-green-700 text-white hover:bg-green-800",
+  const variants = {
+    primary:
+      "bg-[var(--color-brand-700)] text-white hover:bg-[var(--color-brand-800)] active:bg-[var(--color-brand-900)]",
     secondary:
-      "border border-gray-300 bg-white text-gray-900 hover:border-green-700 hover:text-green-700",
+      "border border-[var(--color-border)] bg-white text-gray-800 hover:border-[var(--color-brand-600)] hover:text-[var(--color-brand-700)]",
+    ghost:
+      "text-[var(--color-brand-700)] hover:bg-[var(--color-brand-50)]",
   };
 
-  const sizeClasses = {
+  const sizes = {
     sm: "px-4 py-2 text-sm",
-    md: "px-6 py-3 text-sm",
-    lg: "px-8 py-4 text-base",
+    md: "px-5 py-2.5 text-sm",
+    lg: "px-7 py-3.5 text-base",
   };
 
-  const classes = cn(
-    baseClasses,
-    variantClasses[variant],
-    sizeClasses[size],
-    className
-  );
+  const classes = cn(base, variants[variant], sizes[size], className);
 
-  if ("href" in props) {
+  if ("href" in props && props.href !== undefined) {
     const { href, ...linkProps } = props as ButtonAsLink;
     return (
       <Link href={href} className={classes} {...linkProps}>
@@ -62,7 +60,7 @@ export function Button({
   }
 
   return (
-    <button className={classes} {...props}>
+    <button className={classes} {...(props as ButtonAsButton)}>
       {children}
     </button>
   );

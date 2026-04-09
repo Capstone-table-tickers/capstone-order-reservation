@@ -8,13 +8,19 @@ interface BadgeProps {
 
 export function Badge({ variant = "default", className, children }: BadgeProps) {
   const variantClasses = {
-    default: "bg-gray-100 text-gray-800",
-    outline: "border border-gray-300 text-gray-700",
-    success: "bg-green-100 text-green-800",
+    default: "bg-gray-100 text-gray-700",
+    outline: "border border-[var(--color-border)] text-gray-600",
+    success: "bg-[var(--color-brand-100)] text-[var(--color-brand-800)]",
   };
 
   return (
-    <span className={cn("rounded-full px-2 py-1 text-xs font-medium", variantClasses[variant], className)}>
+    <span
+      className={cn(
+        "inline-block rounded-full px-2.5 py-0.5 text-xs font-medium",
+        variantClasses[variant],
+        className,
+      )}
+    >
       {children}
     </span>
   );
