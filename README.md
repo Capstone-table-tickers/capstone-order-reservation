@@ -169,5 +169,4 @@ practical user flows, and a production-quality admin experience.
 - Chinche Afungchwi — Lead developer, architecture, backend
 - Onyeisi — Frontend implementation, UI
 - Chikadibia — QA, testing, component cleanup
-- Md Walidur — QA, admin flows, bug verification
 - Chinemerem — Documentation, content, demo readiness
